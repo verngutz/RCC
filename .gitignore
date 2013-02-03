@@ -1,0 +1,9 @@
+*~
+y.tab.c
+y.tab.h
+y.tab.o
+y.output
+test.c
+lex.yy.c
+lex.yy.o
+rcc
