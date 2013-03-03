@@ -36,66 +36,47 @@
 
 identifier
 	: IDENTIFIER { 
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "identifier";
-		n->value = strdup(yytext);
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "identifier";
+		$$->value = strdup(yytext);
 	};
 	
 i_constant
 	: I_CONSTANT { 
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "i_constant";
-		n->value = strdup(yytext);
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "i_constant";
+		$$->value = strdup(yytext);
 	};
 
 f_constant
 	: F_CONSTANT {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "f_constant";
-		n->value = strdup(yytext);
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "f_constant";
+		$$->value = strdup(yytext);
 	};
 	
 string_literal
 	: STRING_LITERAL {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "string_literal";
-		n->value = strdup(yytext);
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "string_literal";
+		$$->value = strdup(yytext);
 	};
 	
 func_name
-	: FUNC_NAME {
-		struct ast_node func_name;
-		func_name.type = "func_name";
-		func_name.value = strdup(yytext);
-		func_name.childcount = 0;
-		$$ = &func_name;
-	};
+	: FUNC_NAME
+	;
 	
 size_of
-	: SIZEOF {
-		struct ast_node size_of;
-		size_of.type = "size_of";
-		size_of.value = strdup(yytext);
-		size_of.childcount = 0;
-		$$ = &size_of;
-	};
+	: SIZEOF
+	;
 	
 ptr_op
-	: PTR_OP {
-		struct ast_node ptr_op;
-		ptr_op.type = "ptr_op";
-		ptr_op.value = strdup(yytext);
-		ptr_op.childcount = 0;
-		$$ = &ptr_op;
-	};
+	: PTR_OP
+	;
 
 primary_expression
 	: identifier {
@@ -107,7 +88,9 @@ primary_expression
 	| string {
 		$$ = $1;
 	}
-	| '(' expression ')'
+	| '(' expression ')' {
+		$$ = $2;
+	}
 	| generic_selection
 	;
 
@@ -149,43 +132,49 @@ postfix_expression
 		$$ = $1;
 	}
 	| postfix_expression '[' expression ']' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "array access";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "array access";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| postfix_expression '(' ')' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "function call no args";
-		n->left_child = $1;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "function call no args";
+		$$->left_child = $1;
+		$1->parent = $$;
 	}
 	| postfix_expression '(' argument_expression_list ')' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "function call with args";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "function call with args";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		struct ast_node* curr = $3;
+		while(curr != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
 	| postfix_expression '.' identifier
 	| postfix_expression PTR_OP identifier
 	| postfix_expression INC_OP {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "post-inc";
-		n->left_child = $1;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "post-inc";
+		$$->left_child = $1;
+		$1->parent = $$;
 	}
 	| postfix_expression DEC_OP {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "post-dec";
-		n->left_child = $1;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "post-dec";
+		$$->left_child = $1;
+		$1->parent = $$;
 	}
 	| '(' type_name ')' '{' initializer_list '}'
 	| '(' type_name ')' '{' initializer_list ',' '}'
@@ -210,18 +199,18 @@ unary_expression
 		$$ = $1;
 	}
 	| INC_OP unary_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "pre-inc";
-		n->left_child = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "pre-inc";
+		$$->left_child = $2;
+		$2->parent = $$;
 	}
 	| DEC_OP unary_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "pred-dec";
-		n->left_child = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "pred-dec";
+		$$->left_child = $2;
+		$2->parent = $$;
 	}
 	| unary_operator cast_expression
 	| SIZEOF unary_expression
@@ -243,12 +232,13 @@ cast_expression
 		$$ = $1;
 	}
 	| '(' type_name ')' cast_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "cast-expression";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "cast-expression";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -257,28 +247,31 @@ multiplicative_expression
 		$$ = $1;
 	}
 	| multiplicative_expression '*' cast_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "TIMES";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "TIMES";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| multiplicative_expression '/' cast_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "DIVIDE";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "DIVIDE";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| multiplicative_expression '%' cast_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "MODULO";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "MODULO";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -287,20 +280,22 @@ additive_expression
 		$$ = $1;
 	}
 	| additive_expression '+' multiplicative_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "PLUS";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "PLUS";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| additive_expression '-' multiplicative_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "MINUS";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "MINUS";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -309,20 +304,22 @@ shift_expression
 		$$ = $1;
 	}
 	| shift_expression LEFT_OP additive_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "SHIFT-LEFT";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "SHIFT-LEFT";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| shift_expression RIGHT_OP additive_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "SHIFT-RIGHT";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "SHIFT-RIGHT";
+		$$->left_child = $1;
+		$$->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -331,36 +328,40 @@ relational_expression
 		$$ = $1;
 	}
 	| relational_expression '<' shift_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "LESS-THAN";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "LESS-THAN";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| relational_expression '>' shift_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "GREATER-THAN";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "GREATER-THAN";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| relational_expression LE_OP shift_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "LESS-THAN";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "LESS-THAN";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| relational_expression GE_OP shift_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "GREATER-THAN";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;	
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "GREATER-THAN";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -369,20 +370,22 @@ equality_expression
 		$$ = $1;
 	}
 	| equality_expression EQ_OP relational_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "EQUALS";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "EQUALS";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| equality_expression NE_OP relational_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "NOT-EQUALS";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "NOT-EQUALS";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -391,12 +394,13 @@ and_expression
 		$$ = $1;
 	}
 	| and_expression '&' equality_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "BITWISE-AND";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "BITWISE-AND";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -405,12 +409,13 @@ exclusive_or_expression
 		$$ = $1;
 	}
 	| exclusive_or_expression '^' and_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "BITWISE-XOR";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "BITWISE-XOR";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -419,12 +424,13 @@ inclusive_or_expression
 		$$ = $1;
 	}
 	| inclusive_or_expression '|' exclusive_or_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "BITWISE-OR";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "BITWISE-OR";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -433,12 +439,13 @@ logical_and_expression
 		$$ = $1;
 	}
 	| logical_and_expression AND_OP inclusive_or_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "AND";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "AND";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -447,12 +454,13 @@ logical_or_expression
 		$$ = $1;
 	}
 	| logical_or_expression OR_OP logical_and_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "OR";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "OR";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -461,13 +469,15 @@ conditional_expression
 		$$ = $1;
 	}
 	| logical_or_expression '?' expression ':' conditional_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "ternary-conditional";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		n->left_child->right_sibling->right_sibling = $5;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "ternary-conditional";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$3->right_sibling = $5;
+		$1->parent = $$;
+		$3->parent = $$;
+		$5->parent = $$;
 	}
 	;
 
@@ -476,93 +486,84 @@ assignment_expression
 		$$ = $1;
 	}
 	| unary_expression assignment_operator assignment_expression {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-expression";
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		n->left_child->right_sibling->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-expression";
+		$$->left_child = $1;
+		$1->right_sibling = $2;
+		$2->right_sibling = $3;
+		$1->parent = $$;
+		$2->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
 assignment_operator
 	: '=' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "=";
 	}
 	| MUL_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "*=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "*=";
 	}
 	| DIV_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "/=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "/=";
 	}
 	| MOD_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "%=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "%=";
 	}
 	| ADD_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "+=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "+=";
 	}
 	| SUB_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "-=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "-=";
 	}
 	| LEFT_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "<<=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "<<=";
 	}
 	| RIGHT_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = ">>=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = ">>=";
 	}
 	| AND_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "&=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "&=";
 	}
 	| XOR_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "^=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "^=";
 	}
 	| OR_ASSIGN {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "assignment-operator";
-		n->value = "|=";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "assignment-operator";
+		$$->value = "|=";
 	}
 	;
 
@@ -583,13 +584,17 @@ constant_expression
 declaration
 	: declaration_specifiers ';'
 	| declaration_specifiers init_declarator_list ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "declaration";
-		n->right_sibling = NULL;
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "declaration";
+		$$->left_child = $1;
+		$1->parent = $$;
+		$1->right_sibling = $2;
+		struct ast_node* curr = $2;
+		while(curr != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
 	
 	| static_assert_declaration
@@ -616,27 +621,33 @@ init_declarator_list
 		$$ = $1;	
 	}
 	
-	| init_declarator_list ',' init_declarator
+	| init_declarator_list ',' init_declarator {
+		struct ast_node* curr = $1;
+		while(curr->right_sibling != NULL) {
+			curr = curr->right_sibling;
+		}
+		curr->right_sibling = $3;
+		$$ = $1;
+	}
 	;
 
 init_declarator
 	: declarator '=' initializer {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "declarator-initializer";
-		n->right_sibling = NULL;
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "declarator-initializer";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	
 	| declarator {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "declarator";
-		n->right_sibling = NULL;
-		n->left_child = $1;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "declarator";
+		$$->left_child = $1;
+		$1->parent = $$;
 	}
 	;
 
@@ -651,53 +662,46 @@ storage_class_specifier
 
 type_specifier
 	: VOID {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "void";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "void";
 	}
 	| CHAR {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "char";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "char";
 	}
 	| SHORT {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "short";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "short";
 	}
 	| INT {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "int";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "int";
 	}
 	| LONG {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "long";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "long";
 	}
 	| FLOAT {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "float";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "float";
 	}
 	| DOUBLE {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "type-specifier";
-		n->value = "double";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "type-specifier";
+		$$->value = "double";
 	}
 	| SIGNED
 	| UNSIGNED
@@ -858,27 +862,25 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "parameter-named-declaration";
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "parameter-named-declaration";
+		$$->left_child = $1;
+		$1->right_sibling = $2;
+		$1->parent = $$;
+		struct ast_node* curr = $2;
+		while(curr != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
-	| declaration_specifiers abstract_declarator {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "parameter-abstract-declaration";
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		$$ = n;
-	}
+	| declaration_specifiers abstract_declarator
 	| declaration_specifiers {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "parameter-unnamed-declaration";
-		n->left_child = $1;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "parameter-unnamed-declaration";
+		$$->left_child = $1;
+		$1->parent = $$;
 	}
 	;
 
@@ -978,43 +980,48 @@ statement
 
 labeled_statement
 	: identifier ':' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "labeled statement";
-		n->left_child = $1;
-		n->left_child->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "labeled statement";
+		$$->left_child = $1;
+		$1->right_sibling = $3;
+		$1->parent = $$;
+		$3->parent = $$;
 	}
 	| CASE constant_expression ':' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "case statement";
-		n->left_child = $2;
-		n->left_child->right_sibling = $4;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "case statement";
+		$$->left_child = $2;
+		$2->right_sibling = $4;
+		$2->parent = $$;
+		$4->parent = $$;
 	}
 	| DEFAULT ':' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "default statement";
-		n->left_child = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "default statement";
+		$$->left_child = $3;
+		$3->parent = $$;
 	}
 	;
 
 compound_statement
 	: '{' '}' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "empty block";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "empty block";
 	}
 	| '{'  block_item_list '}' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "block";
-		n->left_child = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "block";
+		$$->left_child = $2;
+		struct ast_node* curr = $2;
+		while(curr != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
 	;
 
@@ -1043,10 +1050,9 @@ block_item
 
 expression_statement
 	: ';'  {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "empty statement";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "empty statement";
 	}
 	| expression ';'  {
 		$$ = $1;
@@ -1055,134 +1061,150 @@ expression_statement
 
 selection_statement
 	: IF '(' expression ')' statement ELSE statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "if-else";
-		n->left_child = $3;
-		n->left_child->right_sibling = $5;
-		n->left_child->right_sibling->right_sibling = $7;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "if-else";
+		$$->left_child = $3;
+		$3->right_sibling = $5;
+		$5->right_sibling = $7;
+		$3->parent = $$;
+		$5->parent = $$;
+		$7->parent = $$;
 	}
 	| IF '(' expression ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "if";
-		n->left_child = $3;
-		n->left_child->right_sibling = $5;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "if";
+		$$->left_child = $3;
+		$3->right_sibling = $5;
+		$3->parent = $$;
+		$5->parent = $$;
 	}
 	| SWITCH '(' expression ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "switch";
-		n->left_child = $3;
-		n->left_child->right_sibling = $5;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "switch";
+		$$->left_child = $3;
+		$3->right_sibling = $5;
+		$3->parent = $$;
+		$5->parent = $$;
 	}
 	;
 
 iteration_statement
 	: WHILE '(' expression ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "while loop";
-		n->left_child = $3;
-		n->left_child->right_sibling = $5;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "while loop";
+		$$->left_child = $3;
+		$3->right_sibling = $5;
+		$3->parent = $$;
+		$5->parent = $$;
 	}
 	| DO statement WHILE '(' expression ')' ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "do while loop";
-		n->left_child = $2;
-		n->left_child->right_sibling = $5;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "do while loop";
+		$$->left_child = $2;
+		$2->right_sibling = $5;
+		$2->parent = $$;
+		$5->parent = $$;
 	}
 	| FOR '(' expression_statement expression_statement ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "for loop with init and cond";
-		n->left_child = $3;
-		n->left_child->right_sibling = $4;
-		n->left_child->right_sibling->right_sibling = $6;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "for loop with init and cond";
+		$$->left_child = $3;
+		$3->right_sibling = $4;
+		$4->right_sibling = $6;
+		$3->parent = $$;
+		$4->parent = $$;
+		$6->parent = $$;
 	}
 	| FOR '(' expression_statement expression_statement expression ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "for loop with init, cond, and inc";
-		n->left_child = $3;
-		n->left_child->right_sibling = $4;
-		n->left_child->right_sibling->right_sibling = $5;
-		n->left_child->right_sibling->right_sibling->right_sibling = $7;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "for loop with init, cond, and inc";
+		$$->left_child = $3;
+		$3->right_sibling = $4;
+		$4->right_sibling = $5;
+		$5->right_sibling = $7;
+		$3->parent = $$;
+		$4->parent = $$;
+		$5->parent = $$;
+		$7->parent = $$;
 	}
 	| FOR '(' declaration expression_statement ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "for loop with decl-init and cond";
-		n->left_child = $3;
-		n->left_child->right_sibling = $4;
-		n->left_child->right_sibling->right_sibling = $6;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "for loop with decl-init and cond";
+		$$->left_child = $3;
+		$3->right_sibling = $4;
+		$4->right_sibling = $6;
+		$3->parent = $$;
+		$4->parent = $$;
+		$6->parent = $$;
 	}
 	| FOR '(' declaration expression_statement expression ')' statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "for loop with decl-init, cond, and inc";
-		n->left_child = $3;
-		n->left_child->right_sibling = $4;
-		n->left_child->right_sibling->right_sibling = $5;
-		n->left_child->right_sibling->right_sibling = $7;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "for loop with decl-init, cond, and inc";
+		$$->left_child = $3;
+		$3->right_sibling = $4;
+		$4->right_sibling = $5;
+		$5->right_sibling = $7;
+		$3->parent = $$;
+		$4->parent = $$;
+		$5->parent = $$;
+		$7->parent = $$;
 	}
 	;
 
 jump_statement
 	: GOTO identifier ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "goto";
-		n->left_child = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "goto";
+		$$->left_child = $2;
+		$2->parent = $$;
 	}
 	| CONTINUE ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "continue";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "continue";
 	}
 	| BREAK ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "break";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "break";
 	}
 	| RETURN ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "return void";
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "return void";
 	}
 	| RETURN expression ';' {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "return expression";
-		n->left_child = $2;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "return expression";
+		$$->left_child = $2;
+		$2->parent = $$;
 	}
 	;
 
 translation_unit
 	: external_declaration {
 		root->left_child = $$ = $1;
+		$$->parent = root;
 	}
 	| translation_unit external_declaration {
 		root->left_child = $$ = $1;
 		struct ast_node* curr = root->left_child;
 		while(curr->right_sibling != NULL) {
+			curr->parent = root;
 			curr = curr->right_sibling;
 		}
+		$2->parent = root;
 		curr->right_sibling = $2;
 	};
 
@@ -1197,23 +1219,33 @@ external_declaration
 
 function_definition
 	: declaration_specifiers declarator declaration_list compound_statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "function definition with declaration list";
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		n->left_child->right_sibling->right_sibling = $3;
-		n->left_child->right_sibling->right_sibling->right_sibling = $4;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "function def w/ decl list";
+		$$->left_child = $1;
+		$1->parent = $$;
+		$1->right_sibling = $2;
+		$2->parent = $$;
+		$2->right_sibling = $3;
+		struct ast_node* curr = $3;
+		while(curr->right_sibling != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
+		curr->parent = $$;
+		curr->right_sibling = $4;
+		$4->parent = $$;
 	}
 	| declaration_specifiers declarator compound_statement {
-		struct ast_node* n = (struct ast_node*) malloc(sizeof(struct ast_node));
-		memset(n, 0, sizeof(struct ast_node));
-		n->type = "function definition without declaration list";
-		n->left_child = $1;
-		n->left_child->right_sibling = $2;
-		n->left_child->right_sibling->right_sibling = $3;
-		$$ = n;
+		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
+		memset($$, 0, sizeof(struct ast_node));
+		$$->type = "function def w/o decl list";
+		$$->left_child = $1;
+		$1->right_sibling = $2;
+		$2->right_sibling = $3;
+		$1->parent = $$;
+		$2->parent = $$;
+		$3->parent = $$;
 	}
 	;
 
@@ -1247,9 +1279,12 @@ int main()
 	root->type = "root";
 	yyparse();
 	struct ast_node* curr = root;
-	typecheck(root, 0);
-	scopecheck(root);
-	struct ir_node* intrep = ir(root);
-	compile(intrep);
+	if(buildsymbols(root))
+	if(scopecheck(root))
+	if(typecheck(root)) {
+		print(root, 0);
+		struct ir_node* intrep = ir(root);
+		compile(intrep);
+	}
 	return 0;
 }
