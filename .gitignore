@@ -7,3 +7,4 @@ test.c
 lex.yy.c
 lex.yy.o
 rcc
+Makefile
