@@ -503,67 +503,67 @@ assignment_operator
 	: '=' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "=";
 	}
 	| MUL_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "*=";
 	}
 	| DIV_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "/=";
 	}
 	| MOD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "%=";
 	}
 	| ADD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "+=";
 	}
 	| SUB_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "-=";
 	}
 	| LEFT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "<<=";
 	}
 	| RIGHT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = ">>=";
 	}
 	| AND_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "&=";
 	}
 	| XOR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "^=";
 	}
 	| OR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "|=";
 	}
 	;
@@ -1285,8 +1285,12 @@ int main()
 	if(scopecheck(root))
 	if(typecheck(root)) {
 		print(root, 0);
-		struct ir_node* intrep = ir(root);
-		compile(intrep);
+		ir_gen(root);
+		//compile(intrep);
+	}
+	struct ir_node * chicha = head;
+	while(chicha != NULL){
+		printf("%s %s %s %s %s\n", chicha->operand1, chicha->op1, chicha->operand2, chicha-> op2, chicha->operand3);
 	}
 	return 0;
 }
