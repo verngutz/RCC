@@ -34,11 +34,12 @@
 %start translation_unit
 %%
 
+
 identifier
 	: IDENTIFIER { 
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "identifier";
+		$$->type = TYPE_IDENTIFIER;
 		$$->value = strdup(yytext);
 	};
 	
@@ -46,7 +47,7 @@ i_constant
 	: I_CONSTANT { 
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "i_constant";
+		$$->type = TYPE_INTCONSTANT;
 		$$->value = strdup(yytext);
 	};
 
@@ -54,7 +55,7 @@ f_constant
 	: F_CONSTANT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "f_constant";
+		$$->type = TYPE_FLOATCONSTANT;
 		$$->value = strdup(yytext);
 	};
 	
@@ -62,7 +63,7 @@ string_literal
 	: STRING_LITERAL {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "string_literal";
+		$$->type = TYPE_STRINGLITERAL;
 		$$->value = strdup(yytext);
 	};
 	
@@ -134,7 +135,7 @@ postfix_expression
 	| postfix_expression '[' expression ']' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "array access";
+		$$->type = TYPE_ARRAYACCESS;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -143,14 +144,14 @@ postfix_expression
 	| postfix_expression '(' ')' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function call no args";
+		$$->type = TYPE_FCALL_NO_ARGS;
 		$$->left_child = $1;
 		$1->parent = $$;
 	}
 	| postfix_expression '(' argument_expression_list ')' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function call with args";
+		$$->type = TYPE_FCALL_ARGS;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -165,14 +166,14 @@ postfix_expression
 	| postfix_expression INC_OP {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "post-inc";
+		$$->type = TYPE_POST_UNARY;
 		$$->left_child = $1;
 		$1->parent = $$;
 	}
 	| postfix_expression DEC_OP {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "post-dec";
+		$$->type = TYPE_POST_UNARY;
 		$$->left_child = $1;
 		$1->parent = $$;
 	}
@@ -201,14 +202,14 @@ unary_expression
 	| INC_OP unary_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "pre-inc";
+		$$->type = TYPE_PRE_UNARY;
 		$$->left_child = $2;
 		$2->parent = $$;
 	}
 	| DEC_OP unary_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "pred-dec";
+		$$->type = TYPE_PRE_UNARY;
 		$$->left_child = $2;
 		$2->parent = $$;
 	}
@@ -234,7 +235,7 @@ cast_expression
 	| '(' type_name ')' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "cast-expression";
+		$$->type = TYPE_CAST_EXPRESSION;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -249,7 +250,7 @@ multiplicative_expression
 	| multiplicative_expression '*' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "TIMES";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -258,7 +259,7 @@ multiplicative_expression
 	| multiplicative_expression '/' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "DIVIDE";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -267,7 +268,7 @@ multiplicative_expression
 	| multiplicative_expression '%' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "MODULO";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -282,7 +283,7 @@ additive_expression
 	| additive_expression '+' multiplicative_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "PLUS";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -291,7 +292,7 @@ additive_expression
 	| additive_expression '-' multiplicative_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "MINUS";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -306,7 +307,7 @@ shift_expression
 	| shift_expression LEFT_OP additive_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "SHIFT-LEFT";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -315,7 +316,7 @@ shift_expression
 	| shift_expression RIGHT_OP additive_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "SHIFT-RIGHT";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$$->right_sibling = $3;
 		$1->parent = $$;
@@ -330,7 +331,7 @@ relational_expression
 	| relational_expression '<' shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "LESS-THAN";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -339,7 +340,7 @@ relational_expression
 	| relational_expression '>' shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "GREATER-THAN";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -348,7 +349,7 @@ relational_expression
 	| relational_expression LE_OP shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "LESS-THAN";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -357,7 +358,7 @@ relational_expression
 	| relational_expression GE_OP shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "GREATER-THAN";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -372,7 +373,7 @@ equality_expression
 	| equality_expression EQ_OP relational_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "EQUALS";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -381,7 +382,7 @@ equality_expression
 	| equality_expression NE_OP relational_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "NOT-EQUALS";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -396,7 +397,7 @@ and_expression
 	| and_expression '&' equality_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-AND";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -411,7 +412,7 @@ exclusive_or_expression
 	| exclusive_or_expression '^' and_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-XOR";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -426,7 +427,7 @@ inclusive_or_expression
 	| inclusive_or_expression '|' exclusive_or_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-OR";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -441,7 +442,7 @@ logical_and_expression
 	| logical_and_expression AND_OP inclusive_or_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "AND";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -456,7 +457,7 @@ logical_or_expression
 	| logical_or_expression OR_OP logical_and_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "OR";
+		$$->type = TYPE_BINARY_OP;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -471,7 +472,7 @@ conditional_expression
 	| logical_or_expression '?' expression ':' conditional_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "ternary-conditional";
+		$$->type = TYPE_TERNARY;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$3->right_sibling = $5;
@@ -488,7 +489,7 @@ assignment_expression
 	| unary_expression assignment_operator assignment_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-expression";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
 		$2->right_sibling = $3;
@@ -502,67 +503,67 @@ assignment_operator
 	: '=' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "=";
 	}
 	| MUL_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "*=";
 	}
 	| DIV_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "/=";
 	}
 	| MOD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "%=";
 	}
 	| ADD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "+=";
 	}
 	| SUB_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "-=";
 	}
 	| LEFT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "<<=";
 	}
 	| RIGHT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = ">>=";
 	}
 	| AND_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "&=";
 	}
 	| XOR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "^=";
 	}
 	| OR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "|=";
 	}
 	;
@@ -586,7 +587,7 @@ declaration
 	| declaration_specifiers init_declarator_list ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declaration";
+		$$->type = TYPE_DECLARATION;
 		$$->left_child = $1;
 		$1->parent = $$;
 		$1->right_sibling = $2;
@@ -635,7 +636,7 @@ init_declarator
 	: declarator '=' initializer {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declarator-initializer";
+		$$->type = TYPE_DECLARATOR_INITIALIZER;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -645,7 +646,7 @@ init_declarator
 	| declarator {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declarator";
+		$$->type = TYPE_DECLARATOR;
 		$$->left_child = $1;
 		$1->parent = $$;
 	}
@@ -664,43 +665,43 @@ type_specifier
 	: VOID {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "void";
 	}
 	| CHAR {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "char";
 	}
 	| SHORT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "short";
 	}
 	| INT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "int";
 	}
 	| LONG {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "long";
 	}
 	| FLOAT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "float";
 	}
 	| DOUBLE {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->value = "double";
 	}
 	| SIGNED
@@ -815,12 +816,12 @@ direct_declarator
 	| direct_declarator '[' type_qualifier_list ']'
 	| direct_declarator '[' assignment_expression ']'
 	| direct_declarator '(' parameter_type_list ')' {
-		$1->type = "function-identifier with param list";
+		$1->type = TYPE_FINDENTIFIER_PARAM_LIST;
 		$1->right_sibling = $3;
 		$$ = $1;
 	}
 	| direct_declarator '(' ')' {
-		$1->type = "function-identifier";
+		$1->type = TYPE_FINDENTIFIER;
 		$$ = $1;
 	}
 	| direct_declarator '(' identifier_list ')'
@@ -864,7 +865,7 @@ parameter_declaration
 	: declaration_specifiers declarator {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "parameter-named-declaration";
+		$$->type = TYPE_PARAM_NAMED_DECLARATION;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
 		$1->parent = $$;
@@ -878,7 +879,7 @@ parameter_declaration
 	| declaration_specifiers {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "parameter-unnamed-declaration";
+		$$->type = TYPE_PARAM_UNNAMED_DECLARATION;
 		$$->left_child = $1;
 		$1->parent = $$;
 	}
@@ -982,7 +983,7 @@ labeled_statement
 	: identifier ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "labeled statement";
+		$$->type = TYPE_LABELED_STATEMENT;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
 		$1->parent = $$;
@@ -991,7 +992,7 @@ labeled_statement
 	| CASE constant_expression ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "case statement";
+		$$->type = TYPE_CASE_STATEMENT;
 		$$->left_child = $2;
 		$2->right_sibling = $4;
 		$2->parent = $$;
@@ -1000,7 +1001,7 @@ labeled_statement
 	| DEFAULT ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "default statement";
+		$$->type = TYPE_DEFAULT_STATEMENT;
 		$$->left_child = $3;
 		$3->parent = $$;
 	}
@@ -1010,12 +1011,12 @@ compound_statement
 	: '{' '}' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "empty block";
+		$$->type = TYPE_EMPTY_BLOCK;
 	}
 	| '{'  block_item_list '}' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "block";
+		$$->type = TYPE_BLOCK;
 		$$->left_child = $2;
 		struct ast_node* curr = $2;
 		while(curr != NULL) {
@@ -1052,7 +1053,7 @@ expression_statement
 	: ';'  {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "empty statement";
+		$$->type = TYPE_EMPTY_STATEMENT;
 	}
 	| expression ';'  {
 		$$ = $1;
@@ -1063,7 +1064,7 @@ selection_statement
 	: IF '(' expression ')' statement ELSE statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "if-else";
+		$$->type = TYPE_IF_ELSE;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
 		$5->right_sibling = $7;
@@ -1074,7 +1075,7 @@ selection_statement
 	| IF '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "if";
+		$$->type = TYPE_IF;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
 		$3->parent = $$;
@@ -1083,7 +1084,7 @@ selection_statement
 	| SWITCH '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "switch";
+		$$->type = TYPE_SWITCH;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
 		$3->parent = $$;
@@ -1095,7 +1096,7 @@ iteration_statement
 	: WHILE '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "while loop";
+		$$->type = TYPE_WHILE_LOOP;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
 		$3->parent = $$;
@@ -1104,7 +1105,7 @@ iteration_statement
 	| DO statement WHILE '(' expression ')' ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "do while loop";
+		$$->type = TYPE_DO_WHILE_LOOP;
 		$$->left_child = $2;
 		$2->right_sibling = $5;
 		$2->parent = $$;
@@ -1113,7 +1114,7 @@ iteration_statement
 	| FOR '(' expression_statement expression_statement ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with init and cond";
+		$$->type = TYPE_FOR_LOOP_INIT_COND;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
 		$4->right_sibling = $6;
@@ -1124,7 +1125,7 @@ iteration_statement
 	| FOR '(' expression_statement expression_statement expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with init, cond, and inc";
+		$$->type = TYPE_FOR_LOOP_INIT_COND_INC;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
 		$4->right_sibling = $5;
@@ -1137,7 +1138,7 @@ iteration_statement
 	| FOR '(' declaration expression_statement ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with decl-init and cond";
+		$$->type = TYPE_FOR_LOOP_DECINIT_COND;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
 		$4->right_sibling = $6;
@@ -1148,7 +1149,7 @@ iteration_statement
 	| FOR '(' declaration expression_statement expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with decl-init, cond, and inc";
+		$$->type = TYPE_FOR_LOOP_DECINIT_COND_INC;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
 		$4->right_sibling = $5;
@@ -1164,29 +1165,29 @@ jump_statement
 	: GOTO identifier ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "goto";
+		$$->type = TYPE_GOTO;
 		$$->left_child = $2;
 		$2->parent = $$;
 	}
 	| CONTINUE ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "continue";
+		$$->type = TYPE_CONTINUE;
 	}
 	| BREAK ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "break";
+		$$->type = TYPE_BREAK;
 	}
 	| RETURN ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "return void";
+		$$->type = TYPE_RETURN_VOID;
 	}
 	| RETURN expression ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "return expression";
+		$$->type = TYPE_RETURN_EXP;
 		$$->left_child = $2;
 		$2->parent = $$;
 	}
@@ -1221,7 +1222,7 @@ function_definition
 	: declaration_specifiers declarator declaration_list compound_statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function def w/ decl list";
+		$$->type = TYPE_FDEF_DECLIST;
 		$$->left_child = $1;
 		$1->parent = $$;
 		$1->right_sibling = $2;
@@ -1239,7 +1240,7 @@ function_definition
 	| declaration_specifiers declarator compound_statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function def w/o decl list";
+		$$->type = TYPE_FDEF_NO_DECLIST;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
 		$2->right_sibling = $3;
@@ -1279,6 +1280,7 @@ int main()
 	root->type = "root";
 	yyparse();
 	struct ast_node* curr = root;
+	print(root, 0);
 	if(buildsymbols(root))
 	if(scopecheck(root))
 	if(typecheck(root)) {
