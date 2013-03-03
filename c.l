@@ -164,7 +164,7 @@ static void comment(void)
 {
     int c;
 
-    while ((c = input()) != 0)
+    while ((c = input()) != 0 && c != EOF)
         if (c == '*')
         {
             while ((c = input()) == '*')
