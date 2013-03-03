@@ -12,10 +12,7 @@ struct ast_node {
 	struct ast_node* right_sibling;
 	struct ast_node* left_child;
 	struct symrec* vtable;
-	int first_line;
-	int first_column;
-	int last_line;
-	int last_column;
+	int lineno;
 };
 
 struct ir_node {
@@ -39,7 +36,6 @@ int bind(struct ast_node* env, char* name, char* type) {
 	else {
 		while(1){
 			if(strcmp(name,sr->name) == 0) {
-				printf("Error: %s was already declared in this scope.\n", name);
 				return 0;
 			}
 			if(sr->next == 0) break;
@@ -75,8 +71,37 @@ int buildsymbols(struct ast_node* ast) {
 	if(strcmp(ast->type, "declaration") == 0) {
 		struct ast_node* type_node = ast->left_child;
 		struct ast_node* identifier_node = ast->left_child->right_sibling->left_child;
-		if(!bind(ast->parent, identifier_node->value, type_node->value))
+		struct ast_node* curr = ast;
+		while(1) {
+			if(strcmp(curr->type, "block") == 0 || strcmp(curr->type, "root") == 0 )
+				break;
+			curr = curr->parent;
+		}
+		if(!bind(curr, identifier_node->value, type_node->value)) {
+			printf("Line %d: scope error -- '%s' was already declared in this scope.\n", ast->lineno, identifier_node->value);		
 			return 0;
+		}
+	}
+	else if(strcmp(ast->type, "parameter-unnamed-declaration") == 0) {
+		if(strcmp(ast->parent->type, "function def w/o decl list") == 0) {
+			printf("Line %d: Error -- parameter name omitted.\n", ast->lineno);		
+			return 0;
+		}
+	}
+	else if(strcmp(ast->type, "parameter-named-declaration") == 0) {
+		struct ast_node* type_node = ast->left_child;
+		struct ast_node* identifier_node = ast->left_child->right_sibling;
+		struct ast_node* curr = ast;
+		while(curr != NULL) {
+			if(strcmp(curr->type, "block") == 0) {
+				if(!bind(curr, identifier_node->value, type_node->value)) {
+					printf("Line %d: scope error -- '%s' was already declared in this scope.\n", ast->lineno, identifier_node->value);		
+					return 0;
+				}
+				break;
+			}
+			curr = curr->right_sibling;
+		}
 	}
 	return buildsymbols(ast->left_child) & buildsymbols(ast->right_sibling);
 }
@@ -104,6 +129,9 @@ void print(struct ast_node* ast, int depth) {
 
 int typecheck(struct ast_node* ast) {
 	if(ast == NULL) return 1;
+	if(strcmp(ast->type, "declarator-initializer") == 0) {
+		//char* type = 
+	}
 	return typecheck(ast->left_child) & typecheck(ast->right_sibling);
 }
 
@@ -116,7 +144,7 @@ int scopecheck(struct ast_node* ast) {
 		if(strcmp(ast->type, "identifier") == 0) {
 			struct symrec* out;
 			if(!get(ast, ast->value, out)) {
-				printf("Error: '%s' undeclared.\n", ast->value);
+				printf("Line %d: scope error -- '%s' undeclared.\n", ast->lineno, ast->value);
 				return 0;
 			}
 		}
