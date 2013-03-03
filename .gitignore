@@ -8,3 +8,5 @@ lex.yy.c
 lex.yy.o
 rcc
 Makefile
+.DS_Store
+test.out
