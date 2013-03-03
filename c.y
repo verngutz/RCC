@@ -1279,10 +1279,10 @@ int main()
 	root->type = "root";
 	yyparse();
 	struct ast_node* curr = root;
+	print(root, 0);
 	if(buildsymbols(root))
 	if(scopecheck(root))
 	if(typecheck(root)) {
-		print(root, 0);
 		struct ir_node* intrep = ir(root);
 		compile(intrep);
 	}

@@ -109,22 +109,19 @@ int typecheck(struct ast_node* ast) {
 
 int scopecheck(struct ast_node* ast) {
 	if(ast == NULL) return 1;
-	if(strcmp(ast->type, "identifier") == 0) {
-		struct ast_node* curr = ast;
-		while(curr != NULL) {
-			if(strcmp(curr->type, "declaration") == 0) {
-				goto a;
-			}
-			curr = curr->parent;
-		}
-		struct symrec* out;
-		if(!get(ast, ast->value, out)) {
-			printf("Error: '%s' undeclared.\n", ast->value);
-			return 0;
-		}
+	if(strcmp(ast->type, "declaration") == 0) {
+		scopecheck(ast->right_sibling);
 	}
-a:
-	return scopecheck(ast->left_child) & scopecheck(ast->right_sibling);
+	else {
+		if(strcmp(ast->type, "identifier") == 0) {
+			struct symrec* out;
+			if(!get(ast, ast->value, out)) {
+				printf("Error: '%s' undeclared.\n", ast->value);
+				return 0;
+			}
+		}
+		return scopecheck(ast->left_child) & scopecheck(ast->right_sibling);
+	}
 }
 
 struct ir_node* ir(struct ast_node* ast) {
