@@ -556,77 +556,77 @@ assignment_operator
 	: '=' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "=";
 		$$->lineno = yylineno;
 	}
 	| MUL_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "*=";
 		$$->lineno = yylineno;
 	}
 	| DIV_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "/=";
 		$$->lineno = yylineno;
 	}
 	| MOD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "%=";
 		$$->lineno = yylineno;
 	}
 	| ADD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "+=";
 		$$->lineno = yylineno;
 	}
 	| SUB_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "-=";
 		$$->lineno = yylineno;
 	}
 	| LEFT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "<<=";
 		$$->lineno = yylineno;
 	}
 	| RIGHT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = ">>=";
 		$$->lineno = yylineno;
 	}
 	| AND_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "&=";
 		$$->lineno = yylineno;
 	}
 	| XOR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "^=";
 		$$->lineno = yylineno;
 	}
 	| OR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = TYPE_ASSIGNMENT;
+		$$->type = TYPE_ASSIGNMENT_OP;
 		$$->value = "|=";
 		$$->lineno = yylineno;
 	}
@@ -1390,8 +1390,12 @@ int main(int argc, char** argv) {
 //	print(root, 0);
 	if(buildsymbols(root) && scopecheck(root)) {
 		print(root, 0);
-		struct ir_node* intrep = ir(root);
-		compile(intrep);
+		ir_gen(root);
+		//compile(intrep);
+	}
+	struct ir_node * chicha = head;
+	while(chicha != NULL){
+		printf("%s %s %s %s %s\n", chicha->operand1, chicha->op1, chicha->operand2, chicha-> op2, chicha->operand3);
 	}
 	return 0;
 }

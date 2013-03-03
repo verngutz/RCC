@@ -1,3 +1,5 @@
+#include <string.h>
+
 #define TYPE_ROOT 0
 #define TYPE_IDENTIFIER 1
 #define TYPE_INTCONSTANT 2
@@ -42,7 +44,8 @@
 #define TYPE_RETURN_EXP 41
 #define TYPE_FDEF_DECLIST 42
 #define TYPE_FDEF_NO_DECLIST 43
-#define NUM_TYPES 44
+#define TYPE_ASSIGNMENT_OP 44
+#define NUM_TYPES 45
 
 char* ast_types[NUM_TYPES] = {
 	"root",
@@ -88,7 +91,8 @@ char* ast_types[NUM_TYPES] = {
 	"return void",
 	"return exp",
 	"fdef_declist",
-	"fdef_nodeclist"
+	"fdef_nodeclist",
+	"assignment_operator"
 };
 
 struct symrec {
@@ -319,7 +323,177 @@ int scopecheck(struct ast_node* ast) {
 	}
 }
 
-struct ir_node* ir(struct ast_node* ast) {
+static int var_counter = 0;
+static int label_counter = 0;
+
+struct ir_node * head = NULL;
+struct ir_node * tail = NULL;
+char* newvar(){
+	char * chuchu;
+	sprintf(chuchu, "%c%d", 't', var_counter++);
+	return chuchu;
+}
+char * newlabel(){
+	char * chuchu;
+	sprintf(chuchu, "%c%d", '_L', label_counter++);
+	return chuchu;
+}
+
+void emit(char * operand1, char * op1, char * operand2, char * op2, char * operand3){
+	struct ir_node * ir = (struct ir_node *)(malloc(sizeof(struct ir_node *)));
+	ir->operand1 = operand1;
+	ir->op1 = op1;
+	ir->operand2 = operand2;
+	ir->op2 = op2;
+	ir->operand3 = operand3;
+	
+	if(head == NULL){
+		head = tail = ir;
+	}
+	else{
+		tail->next = ir;
+		tail = ir;
+	}
+}
+
+char * ir_gen(struct ast_node * ast){
+	char * temp;
+	char * temp1;
+	char * temp2;
+	char * lbefore;
+	char * lafter;
+	
+	struct ast_node * curr;
+	int len;
+	switch(ast->type){
+		case TYPE_IDENTIFIER:
+		case TYPE_INTCONSTANT:
+		case TYPE_FLOATCONSTANT:
+			emit(temp, "=", ast->value, NULL, NULL);
+			return temp;
+			break;
+		case TYPE_STRINGLITERAL:
+			break;
+		case TYPE_ARRAYACCESS:
+			break;
+		case TYPE_FCALL_NO_ARGS:
+			break;
+		case TYPE_FCALL_ARGS:
+			break;
+		case TYPE_POST_UNARY:
+			break;
+		case TYPE_PRE_UNARY:
+			break;
+		case TYPE_CAST_EXPRESSION:
+			break;
+		case TYPE_BINARY_OP:
+			temp = newvar();
+			temp1 = ir_gen(ast->left_child->value);
+			temp2 = ir_gen(ast->left_child->right_sibling->value);
+			emit(temp, "=", temp1, ast->value, temp2);
+			return temp;
+			break;
+		case TYPE_TERNARY:
+			break;
+		case TYPE_ASSIGNMENT:
+			temp = newvar();
+			temp1 = ir_gen(ast->left_child->right_sibling->right_sibling->value);
+			len = strlen(ast->left_child->right_sibling->value);
+			temp2 = strncpy(temp2, ast->left_child->right_sibling->value, len - 2);
+			if(len > 1){
+				emit(temp, "=", temp2, NULL, NULL);
+			}
+			else{
+				
+				emit(temp, "=", temp, temp2, temp1);
+			}
+			return temp;
+			break;
+		case TYPE_DECLARATION:
+			break;
+		case TYPE_DECLARATOR_INITIALIZER:
+			temp = newvar();
+			temp1 = ir_gen(ast->left_child->right_sibling->right_sibling->value);
+			int len = strlen(ast->left_child->right_sibling->value);
+			if(len > 1){
+				emit(temp, "=", temp2, NULL, NULL);
+			}
+			return temp;
+			break;
+		case TYPE_DECLARATOR:
+			break;
+		case TYPE_TYPE_SPECIFIER:
+			break;
+		case TYPE_FINDENTIFIER_PARAM_LIST:
+			break;
+		case TYPE_FINDENTIFIER:
+			break;
+		case TYPE_PARAM_NAMED_DECLARATION:
+			break;
+		case TYPE_PARAM_UNNAMED_DECLARATION:
+			break;
+		case TYPE_LABELED_STATEMENT:
+			break;
+		case TYPE_CASE_STATEMENT:
+			break;
+		case TYPE_DEFAULT_STATEMENT:
+			break;
+		case TYPE_EMPTY_BLOCK:
+			break;
+		case TYPE_BLOCK:
+			curr = ast->left_child;
+			while(curr != NULL){
+				ir_gen(curr);
+				curr = curr->right_sibling;
+			}
+			break;
+		case TYPE_EMPTY_STATEMENT:
+			break;
+		case TYPE_IF_ELSE:
+			break;
+		case TYPE_IF:
+			break;
+		case TYPE_SWITCH:
+			break;
+		case TYPE_WHILE_LOOP:
+			lbefore = newlabel();
+			lafter = newlabel();
+			
+			emit(lbefore, ":", NULL, NULL, NULL);
+			
+			temp = ir_gen(ast->left_child);
+			emit("IfZ", temp, "Goto", lafter, NULL);
+			ir_gen(ast->left_child->right_sibling);
+			emit(lbefore, ":", NULL, NULL, NULL);
+			emit(lafter, ":", NULL, NULL, NULL);
+			break;
+		case TYPE_DO_WHILE_LOOP:
+			break;
+		case TYPE_FOR_LOOP_INIT_COND:
+			break;
+		case TYPE_FOR_LOOP_INIT_COND_INC:
+			break;
+		case TYPE_FOR_LOOP_DECINIT_COND:
+			break;
+		case TYPE_FOR_LOOP_DECINIT_COND_INC:
+			break;
+		case TYPE_GOTO:
+			break;
+		case TYPE_CONTINUE:
+			break;
+		case TYPE_BREAK:
+			break;
+		case TYPE_RETURN_VOID:
+			break;
+		case TYPE_RETURN_EXP:
+			break;
+		case TYPE_FDEF_DECLIST:
+			break;
+		case TYPE_FDEF_NO_DECLIST:
+			break;
+		default:
+			break;
+	}
 }
 
 void compile(struct ir_node* ir) {
