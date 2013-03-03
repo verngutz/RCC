@@ -33,11 +33,12 @@
 %start translation_unit
 %%
 
+
 identifier
 	: IDENTIFIER { 
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "identifier";
+		$$->type = TYPE_IDENTIFIER;
 		$$->lineno = yylineno;
 		$$->value = strdup(yytext);
 	};
@@ -46,7 +47,7 @@ i_constant
 	: I_CONSTANT { 
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "i_constant";
+		$$->type = TYPE_INTCONSTANT;
 		$$->lineno = yylineno;
 		$$->value = strdup(yytext);
 	};
@@ -55,7 +56,7 @@ f_constant
 	: F_CONSTANT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "f_constant";
+		$$->type = TYPE_FLOATCONSTANT;
 		$$->lineno = yylineno;
 		$$->value = strdup(yytext);
 	};
@@ -64,7 +65,7 @@ string_literal
 	: STRING_LITERAL {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "string_literal";
+		$$->type = TYPE_STRINGLITERAL;
 		$$->lineno = yylineno;
 		$$->value = strdup(yytext);
 	};
@@ -137,7 +138,7 @@ postfix_expression
 	| postfix_expression '[' expression ']' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "array access";
+		$$->type = TYPE_ARRAYACCESS;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -147,7 +148,7 @@ postfix_expression
 	| postfix_expression '(' ')' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function call no args";
+		$$->type = TYPE_FCALL_NO_ARGS;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -155,7 +156,7 @@ postfix_expression
 	| postfix_expression '(' argument_expression_list ')' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function call with args";
+		$$->type = TYPE_FCALL_ARGS;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -171,7 +172,8 @@ postfix_expression
 	| postfix_expression INC_OP {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "post-inc";
+		$$->type = TYPE_POST_UNARY;
+		$$->value = "++";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -179,7 +181,8 @@ postfix_expression
 	| postfix_expression DEC_OP {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "post-dec";
+		$$->type = TYPE_POST_UNARY;
+		$$->value = "--";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -209,7 +212,8 @@ unary_expression
 	| INC_OP unary_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "pre-inc";
+		$$->type = TYPE_PRE_UNARY;
+		$$->value = "++";
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->parent = $$;
@@ -217,7 +221,8 @@ unary_expression
 	| DEC_OP unary_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "pred-dec";
+		$$->type = TYPE_PRE_UNARY;
+		$$->value = "--";
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->parent = $$;
@@ -244,7 +249,7 @@ cast_expression
 	| '(' type_name ')' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "cast-expression";
+		$$->type = TYPE_CAST_EXPRESSION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -260,7 +265,8 @@ multiplicative_expression
 	| multiplicative_expression '*' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "TIMES";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "*";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -270,7 +276,8 @@ multiplicative_expression
 	| multiplicative_expression '/' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "DIVIDE";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "/";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -280,7 +287,8 @@ multiplicative_expression
 	| multiplicative_expression '%' cast_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "MODULO";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "%";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -296,7 +304,8 @@ additive_expression
 	| additive_expression '+' multiplicative_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "PLUS";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "+";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -306,7 +315,8 @@ additive_expression
 	| additive_expression '-' multiplicative_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "MINUS";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "-";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -322,7 +332,8 @@ shift_expression
 	| shift_expression LEFT_OP additive_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "SHIFT-LEFT";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "<<";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -332,8 +343,9 @@ shift_expression
 	| shift_expression RIGHT_OP additive_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "SHIFT-RIGHT";
+		$$->type = TYPE_BINARY_OP;
 		$$->lineno = yylineno;
+		$$->value = ">>";
 		$$->left_child = $1;
 		$$->right_sibling = $3;
 		$1->parent = $$;
@@ -348,7 +360,8 @@ relational_expression
 	| relational_expression '<' shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "LESS-THAN";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "<";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -358,7 +371,8 @@ relational_expression
 	| relational_expression '>' shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "GREATER-THAN";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = ">";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -368,7 +382,8 @@ relational_expression
 	| relational_expression LE_OP shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "LESS-THAN";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "<=";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -378,7 +393,8 @@ relational_expression
 	| relational_expression GE_OP shift_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "GREATER-THAN";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = ">=";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -394,7 +410,8 @@ equality_expression
 	| equality_expression EQ_OP relational_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "EQUALS";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "=";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -404,7 +421,8 @@ equality_expression
 	| equality_expression NE_OP relational_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "NOT-EQUALS";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "!=";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -420,7 +438,8 @@ and_expression
 	| and_expression '&' equality_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-AND";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "&";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -436,7 +455,8 @@ exclusive_or_expression
 	| exclusive_or_expression '^' and_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-XOR";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "^";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -452,7 +472,8 @@ inclusive_or_expression
 	| inclusive_or_expression '|' exclusive_or_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "BITWISE-OR";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "^";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -468,7 +489,8 @@ logical_and_expression
 	| logical_and_expression AND_OP inclusive_or_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "AND";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "&&";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -484,7 +506,8 @@ logical_or_expression
 	| logical_or_expression OR_OP logical_and_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "OR";
+		$$->type = TYPE_BINARY_OP;
+		$$->value = "||";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -500,7 +523,7 @@ conditional_expression
 	| logical_or_expression '?' expression ':' conditional_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "ternary-conditional";
+		$$->type = TYPE_TERNARY;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -518,7 +541,7 @@ assignment_expression
 	| unary_expression assignment_operator assignment_expression {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-expression";
+		$$->type = TYPE_ASSIGNMENT;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
@@ -533,79 +556,79 @@ assignment_operator
 	: '=' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "=";
+		$$->lineno = yylineno;
 	}
 	| MUL_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "*=";
+		$$->lineno = yylineno;
 	}
 	| DIV_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "/=";
+		$$->lineno = yylineno;
 	}
 	| MOD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "%=";
+		$$->lineno = yylineno;
 	}
 	| ADD_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "+=";
+		$$->lineno = yylineno;
 	}
 	| SUB_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "-=";
+		$$->lineno = yylineno;
 	}
 	| LEFT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "<<=";
+		$$->lineno = yylineno;
 	}
 	| RIGHT_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = ">>=";
+		$$->lineno = yylineno;
 	}
 	| AND_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "&=";
+		$$->lineno = yylineno;
 	}
 	| XOR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "^=";
+		$$->lineno = yylineno;
 	}
 	| OR_ASSIGN {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "assignment-operator";
-		$$->lineno = yylineno;
+		$$->type = TYPE_ASSIGNMENT;
 		$$->value = "|=";
+		$$->lineno = yylineno;
 	}
 	;
 
@@ -628,7 +651,7 @@ declaration
 	| declaration_specifiers init_declarator_list ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declaration";
+		$$->type = TYPE_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -678,7 +701,7 @@ init_declarator
 	: declarator '=' initializer {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declarator-initializer";
+		$$->type = TYPE_DECLARATOR_INITIALIZER;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -689,7 +712,7 @@ init_declarator
 	| declarator {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "declarator";
+		$$->type = TYPE_DECLARATOR;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -709,49 +732,49 @@ type_specifier
 	: VOID {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "void";
 	}
 	| CHAR {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "char";
 	}
 	| SHORT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "short";
 	}
 	| INT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "int";
 	}
 	| LONG {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "long";
 	}
 	| FLOAT {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "float";
 	}
 	| DOUBLE {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "type-specifier";
+		$$->type = TYPE_TYPE_SPECIFIER;
 		$$->lineno = yylineno;
 		$$->value = "double";
 	}
@@ -867,12 +890,12 @@ direct_declarator
 	| direct_declarator '[' type_qualifier_list ']'
 	| direct_declarator '[' assignment_expression ']'
 	| direct_declarator '(' parameter_type_list ')' {
-		$1->type = "function-identifier with param list";
+		$1->type = TYPE_FINDENTIFIER_PARAM_LIST;
 		$1->right_sibling = $3;
 		$$ = $1;
 	}
 	| direct_declarator '(' ')' {
-		$1->type = "function-identifier";
+		$1->type = TYPE_FINDENTIFIER;
 		$$ = $1;
 	}
 	| direct_declarator '(' identifier_list ')'
@@ -916,7 +939,7 @@ parameter_declaration
 	: declaration_specifiers declarator {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "parameter-named-declaration";
+		$$->type = TYPE_PARAM_NAMED_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
@@ -931,7 +954,7 @@ parameter_declaration
 	| declaration_specifiers {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "parameter-unnamed-declaration";
+		$$->type = TYPE_PARAM_UNNAMED_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -1036,7 +1059,7 @@ labeled_statement
 	: identifier ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "labeled statement";
+		$$->type = TYPE_LABELED_STATEMENT;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
@@ -1046,7 +1069,7 @@ labeled_statement
 	| CASE constant_expression ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "case statement";
+		$$->type = TYPE_CASE_STATEMENT;
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->right_sibling = $4;
@@ -1056,7 +1079,7 @@ labeled_statement
 	| DEFAULT ':' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "default statement";
+		$$->type = TYPE_DEFAULT_STATEMENT;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->parent = $$;
@@ -1067,13 +1090,13 @@ compound_statement
 	: '{' '}' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "empty block";
+		$$->type = TYPE_EMPTY_BLOCK;
 		$$->lineno = yylineno;
 	}
 	| '{'  block_item_list '}' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "block";
+		$$->type = TYPE_BLOCK;
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		struct ast_node* curr = $2;
@@ -1111,7 +1134,7 @@ expression_statement
 	: ';'  {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "empty statement";
+		$$->type = TYPE_EMPTY_STATEMENT;
 		$$->lineno = yylineno;
 	}
 	| expression ';'  {
@@ -1123,7 +1146,7 @@ selection_statement
 	: IF '(' expression ')' statement ELSE statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "if-else";
+		$$->type = TYPE_IF_ELSE;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
@@ -1135,7 +1158,7 @@ selection_statement
 	| IF '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "if";
+		$$->type = TYPE_IF;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
@@ -1145,7 +1168,7 @@ selection_statement
 	| SWITCH '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "switch";
+		$$->type = TYPE_SWITCH;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
@@ -1158,7 +1181,7 @@ iteration_statement
 	: WHILE '(' expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "while loop";
+		$$->type = TYPE_WHILE_LOOP;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $5;
@@ -1168,7 +1191,7 @@ iteration_statement
 	| DO statement WHILE '(' expression ')' ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "do while loop";
+		$$->type = TYPE_DO_WHILE_LOOP;
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->right_sibling = $5;
@@ -1178,7 +1201,7 @@ iteration_statement
 	| FOR '(' expression_statement expression_statement ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with init and cond";
+		$$->type = TYPE_FOR_LOOP_INIT_COND;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
@@ -1190,7 +1213,7 @@ iteration_statement
 	| FOR '(' expression_statement expression_statement expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with init, cond, and inc";
+		$$->type = TYPE_FOR_LOOP_INIT_COND_INC;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
@@ -1204,7 +1227,7 @@ iteration_statement
 	| FOR '(' declaration expression_statement ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with decl-init and cond";
+		$$->type = TYPE_FOR_LOOP_DECINIT_COND;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
@@ -1216,7 +1239,7 @@ iteration_statement
 	| FOR '(' declaration expression_statement expression ')' statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "for loop with decl-init, cond, and inc";
+		$$->type = TYPE_FOR_LOOP_DECINIT_COND_INC;
 		$$->lineno = yylineno;
 		$$->left_child = $3;
 		$3->right_sibling = $4;
@@ -1233,7 +1256,7 @@ jump_statement
 	: GOTO identifier ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "goto";
+		$$->type = TYPE_GOTO;
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->parent = $$;
@@ -1241,25 +1264,25 @@ jump_statement
 	| CONTINUE ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "continue";
+		$$->type = TYPE_CONTINUE;
 		$$->lineno = yylineno;
 	}
 	| BREAK ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "break";
+		$$->type = TYPE_BREAK;
 		$$->lineno = yylineno;
 	}
 	| RETURN ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "return void";
+		$$->type = TYPE_RETURN_VOID;
 		$$->lineno = yylineno;
 	}
 	| RETURN expression ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "return expression";
+		$$->type = TYPE_RETURN_EXP;
 		$$->lineno = yylineno;
 		$$->left_child = $2;
 		$2->parent = $$;
@@ -1295,7 +1318,7 @@ function_definition
 	: declaration_specifiers declarator declaration_list compound_statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function def w/ decl list";
+		$$->type = TYPE_FDEF_DECLIST;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->parent = $$;
@@ -1314,7 +1337,7 @@ function_definition
 	| declaration_specifiers declarator compound_statement {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
-		$$->type = "function def w/o decl list";
+		$$->type = TYPE_FDEF_NO_DECLIST;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $2;
@@ -1358,7 +1381,7 @@ void yyerror(const char *s) {
 int main(int argc, char** argv) {
 	root = (struct ast_node*) malloc(sizeof(struct ast_node));
 	memset(root, 0, sizeof(struct ast_node));
-	root->type = "root";
+	root->type = TYPE_ROOT;
 	yyparse();
 	struct ast_node* curr = root;
 	if(buildsymbols(root) && scopecheck(root) && typecheck(root)) {
