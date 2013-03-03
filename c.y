@@ -715,7 +715,11 @@ init_declarator
 		$$->type = TYPE_DECLARATOR;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->parent = $$;
+		struct ast_node* curr = $1;
+		while(curr != NULL) {
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
 	;
 
@@ -1383,8 +1387,8 @@ int main(int argc, char** argv) {
 	memset(root, 0, sizeof(struct ast_node));
 	root->type = TYPE_ROOT;
 	yyparse();
-	struct ast_node* curr = root;
-	if(buildsymbols(root) && scopecheck(root) && typecheck(root)) {
+//	print(root, 0);
+	if(buildsymbols(root) && scopecheck(root)) {
 		print(root, 0);
 		struct ir_node* intrep = ir(root);
 		compile(intrep);
