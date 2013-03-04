@@ -424,8 +424,8 @@ char * ir_gen(struct ast_node * ast){
 			len = strlen(ast->left_child->right_sibling->value);
 			printf("len : %d\n", len);
 			if(len > 1){
-				strcpy(temp2,strncpy(temp2, ast->left_child->right_sibling->value, len - 2));
-				emit(temp, "=", temp, temp2, temp1);
+					strcpy(temp2,strncpy(temp2, ast->left_child->right_sibling->value, len - 1));
+					emit(temp, "=", temp, temp2, temp1);
 			}
 			else{
 				emit(temp, "=", temp1, "", "");
@@ -479,6 +479,7 @@ char * ir_gen(struct ast_node * ast){
 		case TYPE_IF_ELSE:
 			break;
 		case TYPE_IF:
+			
 			break;
 		case TYPE_SWITCH:
 			break;
@@ -487,10 +488,11 @@ char * ir_gen(struct ast_node * ast){
 			strcpy(lafter,newlabel());
 			
 			emit(lbefore, ":", "", "", "");
+			// printf("%s\n", ast_types[ast->left_child->type]);
 			strcpy(temp,ir_gen(ast->left_child));
 			emit("IfZ", temp, "Goto", lafter, "");
 			ir_gen(ast->left_child->right_sibling);
-			emit(lbefore, ":", "", "", "");
+			emit("Goto", lbefore, "", "", "");
 			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_DO_WHILE_LOOP:
