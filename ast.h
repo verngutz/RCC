@@ -299,8 +299,8 @@ int typecheck(struct ast_node* ast) {
 
 int scopecheck(struct ast_node* ast) {
 	if(ast == NULL) return 1;
-	if(ast->type == TYPE_DECLARATION) {
-		scopecheck(ast->right_sibling);
+	if(ast->type == TYPE_DECLARATOR_INITIALIZER) {
+		scopecheck(ast->left_child->right_sibling);
 	}
 	else {
 		struct symrec* out;
