@@ -435,7 +435,6 @@ char * ir_gen(struct ast_node * ast){
 			strcpy(temp,ir_gen(ast->left_child));
 			strcpy(temp1,ir_gen(ast->left_child->right_sibling->right_sibling));
 			len = strlen(ast->left_child->right_sibling->value);
-			printf("len : %d\n", len);
 			if(len > 1){
 					strcpy(temp2,strncpy(temp2, ast->left_child->right_sibling->value, len - 1));
 					emit(temp, "=", temp, temp2, temp1);
