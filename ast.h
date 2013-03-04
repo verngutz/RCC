@@ -490,9 +490,27 @@ char * ir_gen(struct ast_node * ast){
 		case TYPE_EMPTY_STATEMENT:
 			break;
 		case TYPE_IF_ELSE:
+			strcpy(lbefore,newlabel());
+			strcpy(lafter,newlabel());
+			
+			strcpy(temp, ir_gen(ast->left_child));
+			emit("IfZ", temp, "Goto", lbefore, "");
+			
+			ir_gen(ast->left_child->right_sibling);
+			
+			emit("Goto", lafter, "", "", "");
+			emit(lbefore, ":", "", "", "");
+			ir_gen(ast->left_child->right_sibling->right_sibling);
+			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_IF:
-			
+			strcpy(lafter,newlabel());
+
+			strcpy(temp, ir_gen(ast->left_child));
+			emit("IfZ", temp, "Goto", lafter, "");
+
+			ir_gen(ast->left_child->right_sibling);
+			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_SWITCH:
 			break;
@@ -509,6 +527,16 @@ char * ir_gen(struct ast_node * ast){
 			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_DO_WHILE_LOOP:
+			strcpy(lbefore,newlabel());
+			strcpy(lafter,newlabel());
+
+			emit(lbefore, ":", "", "", "");
+			// printf("%s\n", ast_types[ast->left_child->type]);			
+			ir_gen(ast->left_child);
+			strcpy(temp,ir_gen(ast->left_child->right_sibling));
+			emit("IfZ", temp, "Goto", lafter, "");
+			emit("Goto", lbefore, "", "", "");
+			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_FOR_LOOP_INIT_COND:
 			break;

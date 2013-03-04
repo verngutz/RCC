@@ -412,7 +412,7 @@ equality_expression
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
 		$$->type = TYPE_BINARY_OP;
-		$$->value = "=";
+		$$->value = "==";
 		$$->lineno = yylineno;
 		$$->left_child = $1;
 		$1->right_sibling = $3;
