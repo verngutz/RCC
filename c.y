@@ -1425,6 +1425,7 @@ int main(int argc, char** argv) {
 	struct ir_node * chicha = head;
 	while(chicha != NULL){
 		printf("%s %s %s %s %s\n", chicha->operand1, chicha->op1, chicha->operand2, chicha-> op2, chicha->operand3);
+		chicha = chicha->next;
 	}
 	return 0;
 }
