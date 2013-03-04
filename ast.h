@@ -303,48 +303,71 @@ static int label_counter = 0;
 
 struct ir_node * head = NULL;
 struct ir_node * tail = NULL;
+
 char* newvar(){
-	char * chuchu;
+	char * chuchu = (char*)(malloc(sizeof(char)*256));
 	sprintf(chuchu, "%c%d", 't', var_counter++);
 	return chuchu;
 }
 char * newlabel(){
-	char * chuchu;
+	char * chuchu = (char*)(malloc(sizeof(char)*256));
 	sprintf(chuchu, "%c%d", '_L', label_counter++);
 	return chuchu;
 }
 
 void emit(char * operand1, char * op1, char * operand2, char * op2, char * operand3){
-	struct ir_node * ir = (struct ir_node *)(malloc(sizeof(struct ir_node *)));
-	ir->operand1 = operand1;
-	ir->op1 = op1;
-	ir->operand2 = operand2;
-	ir->op2 = op2;
-	ir->operand3 = operand3;
+	struct ir_node * ir = (struct ir_node *)(malloc(sizeof(struct ir_node)));
 	
+	ir->operand1 = (char*)(malloc(sizeof(char)*256));
+	ir->operand2 = (char*)(malloc(sizeof(char)*256));
+	ir->operand3 = (char*)(malloc(sizeof(char)*256));
+	ir->op1 = (char*)(malloc(sizeof(char)*256));
+	ir->op2 = (char*)(malloc(sizeof(char)*256));
+	
+	strcpy(ir->operand1,operand1);
+	strcpy(ir->op1,op1);
+	strcpy(ir->operand2,operand2);
+	strcpy(ir->op2,op2);
+	strcpy(ir->operand3,operand3);
 	if(head == NULL){
 		head = tail = ir;
+		//printf("%s %s %s %s %s\n", ir->operand1, ir->op1, ir->operand2, ir-> op2, ir->operand3);
 	}
 	else{
 		tail->next = ir;
+		//printf("%s %s %s %s %s\n", ir->operand1, ir->op1, ir->operand2, ir-> op2, ir->operand3);
 		tail = ir;
 	}
 }
 
 char * ir_gen(struct ast_node * ast){
-	char * temp;
-	char * temp1;
-	char * temp2;
-	char * lbefore;
-	char * lafter;
+	if(ast == NULL){
+		return "";
+	}
+	char temp[256];
+	char temp1[256];
+	char temp2[256];
+	char lbefore[256];
+	char lafter[256];
 	
-	struct ast_node * curr;
+	struct ast_node * curr = (struct ast_node * )(malloc(sizeof(struct ast_node)));
+	
 	int len;
 	switch(ast->type){
+		case TYPE_ROOT:
+			curr = ast->left_child;
+			while(curr != NULL){
+				ir_gen(curr);
+				curr = curr->right_sibling;
+			}
+			break;
 		case TYPE_IDENTIFIER:
+			return ast->value;
+			break;
 		case TYPE_INTCONSTANT:
 		case TYPE_FLOATCONSTANT:
-			emit(temp, "=", ast->value, NULL, NULL);
+			strcpy(temp,newvar());
+			emit(temp, "=", ast->value, "", "");
 			return temp;
 			break;
 		case TYPE_STRINGLITERAL:
@@ -362,40 +385,44 @@ char * ir_gen(struct ast_node * ast){
 		case TYPE_CAST_EXPRESSION:
 			break;
 		case TYPE_BINARY_OP:
-			temp = newvar();
-			temp1 = ir_gen(ast->left_child->value);
-			temp2 = ir_gen(ast->left_child->right_sibling->value);
+			strcpy(temp,newvar());
+			strcpy(temp1,ir_gen(ast->left_child));
+			strcpy(temp2,ir_gen(ast->left_child->right_sibling));
 			emit(temp, "=", temp1, ast->value, temp2);
 			return temp;
 			break;
 		case TYPE_TERNARY:
 			break;
-		case TYPE_ASSIGNMENT:
-			temp = newvar();
-			temp1 = ir_gen(ast->left_child->right_sibling->right_sibling->value);
+		case TYPE_ASSIGNMENT:	
+			strcpy(temp,ir_gen(ast->left_child));
+			strcpy(temp1,ir_gen(ast->left_child->right_sibling->right_sibling));
 			len = strlen(ast->left_child->right_sibling->value);
-			temp2 = strncpy(temp2, ast->left_child->right_sibling->value, len - 2);
+			printf("len : %d\n", len);
 			if(len > 1){
-				emit(temp, "=", temp2, NULL, NULL);
+				strcpy(temp2,strncpy(temp2, ast->left_child->right_sibling->value, len - 2));
+				emit(temp, "=", temp, temp2, temp1);
 			}
 			else{
-				
-				emit(temp, "=", temp, temp2, temp1);
+				emit(temp, "=", temp1, "", "");
 			}
 			return temp;
 			break;
-		case TYPE_DECLARATION:
+		case TYPE_DECLARATION:	
+			curr = ast->left_child->right_sibling;
+			while(curr != NULL){
+				ir_gen(curr);
+				curr = curr->right_sibling;
+			}		
 			break;
 		case TYPE_DECLARATOR_INITIALIZER:
-			temp = newvar();
-			temp1 = ir_gen(ast->left_child->right_sibling->right_sibling->value);
-			int len = strlen(ast->left_child->right_sibling->value);
-			if(len > 1){
-				emit(temp, "=", temp2, NULL, NULL);
-			}
+			strcpy(temp,ir_gen(ast->left_child));
+			strcpy(temp1,ir_gen(ast->left_child->right_sibling));
+			emit(temp, "=", temp1, "", "");
 			return temp;
 			break;
 		case TYPE_DECLARATOR:
+			strcpy(temp1,ir_gen(ast->left_child));
+			emit(newvar(), "=", temp1,"","");
 			break;
 		case TYPE_TYPE_SPECIFIER:
 			break;
@@ -431,16 +458,15 @@ char * ir_gen(struct ast_node * ast){
 		case TYPE_SWITCH:
 			break;
 		case TYPE_WHILE_LOOP:
-			lbefore = newlabel();
-			lafter = newlabel();
+			strcpy(lbefore,newlabel());
+			strcpy(lafter,newlabel());
 			
-			emit(lbefore, ":", NULL, NULL, NULL);
-			
-			temp = ir_gen(ast->left_child);
-			emit("IfZ", temp, "Goto", lafter, NULL);
+			emit(lbefore, ":", "", "", "");
+			strcpy(temp,ir_gen(ast->left_child));
+			emit("IfZ", temp, "Goto", lafter, "");
 			ir_gen(ast->left_child->right_sibling);
-			emit(lbefore, ":", NULL, NULL, NULL);
-			emit(lafter, ":", NULL, NULL, NULL);
+			emit(lbefore, ":", "", "", "");
+			emit(lafter, ":", "", "", "");
 			break;
 		case TYPE_DO_WHILE_LOOP:
 			break;
@@ -465,10 +491,16 @@ char * ir_gen(struct ast_node * ast){
 		case TYPE_FDEF_DECLIST:
 			break;
 		case TYPE_FDEF_NO_DECLIST:
+			curr = ast->left_child;
+			while(curr != NULL){
+				ir_gen(curr);
+				curr = curr->right_sibling;
+			}
 			break;
 		default:
 			break;
 	}
+
 }
 
 void compile(struct ir_node* ir) {
