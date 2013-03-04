@@ -8,6 +8,7 @@
 	
 	extern char * yytext;
 	extern int yylineno;
+	int haserror = 0;
 	void yyerror(char const *);
 	
 	struct ast_node* root;
@@ -647,16 +648,23 @@ constant_expression
 	;
 
 declaration
-	: declaration_specifiers ';'
+	: declaration_specifiers ';' {
+		yyerror("empty declaration");
+	}
 	| declaration_specifiers init_declarator_list ';' {
 		$$ = (struct ast_node*) malloc(sizeof(struct ast_node));
 		memset($$, 0, sizeof(struct ast_node));
 		$$->type = TYPE_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->parent = $$;
-		$1->right_sibling = $2;
-		struct ast_node* curr = $2;
+		struct ast_node* curr = $1;
+		while(curr->right_sibling != NULL) {	
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
+		curr->parent = $$;
+		curr->right_sibling = $2;
+		curr = $2;
 		while(curr != NULL) {
 			curr->parent = $$;
 			curr = curr->right_sibling;
@@ -669,7 +677,10 @@ declaration
 declaration_specifiers
 	: storage_class_specifier declaration_specifiers
 	| storage_class_specifier
-	| type_specifier declaration_specifiers
+	| type_specifier declaration_specifiers {
+		$$ = $1;
+		$1->right_sibling = $2;
+	}
 	| type_specifier {
 		$$ = $1;
 	}
@@ -946,9 +957,13 @@ parameter_declaration
 		$$->type = TYPE_PARAM_NAMED_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->right_sibling = $2;
-		$1->parent = $$;
-		struct ast_node* curr = $2;
+		struct ast_node* curr = $1;
+		while(curr != NULL) {	
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
+		curr->right_sibling = $2;
+		curr = $2;
 		while(curr != NULL) {
 			curr->parent = $$;
 			curr = curr->right_sibling;
@@ -961,7 +976,11 @@ parameter_declaration
 		$$->type = TYPE_PARAM_UNNAMED_DECLARATION;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->parent = $$;
+		struct ast_node* curr = $1;
+		while(curr != NULL) {	
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
 	}
 	;
 
@@ -1325,11 +1344,16 @@ function_definition
 		$$->type = TYPE_FDEF_DECLIST;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->parent = $$;
-		$1->right_sibling = $2;
+		struct ast_node* curr = $1;
+		while(curr->right_sibling != NULL) {	
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
+		curr->parent = $$;
+		curr->right_sibling = $2;
 		$2->parent = $$;
 		$2->right_sibling = $3;
-		struct ast_node* curr = $3;
+		curr = $3;
 		while(curr->right_sibling != NULL) {
 			curr->parent = $$;
 			curr = curr->right_sibling;
@@ -1344,9 +1368,14 @@ function_definition
 		$$->type = TYPE_FDEF_NO_DECLIST;
 		$$->lineno = yylineno;
 		$$->left_child = $1;
-		$1->right_sibling = $2;
-		$1->parent = $$;
-		struct ast_node* curr = $2;
+		struct ast_node* curr = $1;
+		while(curr->right_sibling != NULL) {	
+			curr->parent = $$;
+			curr = curr->right_sibling;
+		}
+		curr->parent = $$;
+		curr->right_sibling = $2;
+		curr = $2;
 		while(curr->right_sibling != NULL) {
 			curr->parent = $$;
 			curr = curr->right_sibling;
@@ -1380,6 +1409,7 @@ void yyerror(const char *s) {
 		fprintf(stderr, "Line %d: %s\n", yylineno, s);
 	else
 		fprintf(stderr, "Line %d: %s at '%s'\n", yylineno, s, yytext);
+	haserror = 1;
 }
 
 int main(int argc, char** argv) {
@@ -1387,9 +1417,7 @@ int main(int argc, char** argv) {
 	memset(root, 0, sizeof(struct ast_node));
 	root->type = TYPE_ROOT;
 	yyparse();
-	struct ast_node * curr = root;
-//	print(root, 0);
-	if(buildsymbols(root) && scopecheck(root)) {
+	if(!haserror && remove_stupidity(root) && buildsymbols(root) && scopecheck(root)) {
 		print(root, 0);
 		ir_gen(root);
 		//compile(intrep);
