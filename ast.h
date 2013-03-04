@@ -158,7 +158,10 @@ int get(struct ast_node* env, char* name, struct symrec* out) {
 	struct symrec* sr = env->vtable;
 	while(sr != 0){
 		if(strcmp(name,sr->name) == 0) {
-			out = sr;
+			out->name = sr->name;
+			out->value = sr->value;
+			out->type = sr->type;
+			out->argc = sr->argc;
 			return 1;
 		}
 		sr = sr->next;
@@ -173,7 +176,7 @@ int buildsymbols(struct ast_node* ast) {
 	struct ast_node* identifier_node;
 	struct ast_node* curr;
 	int argc;
-	struct symrec* out;
+	struct symrec* out = (struct symrec*) malloc(sizeof(struct symrec));
 	switch(ast->type) {
 		case TYPE_DECLARATION:
 			type_node = ast->left_child;
@@ -212,7 +215,7 @@ int buildsymbols(struct ast_node* ast) {
 			curr = ast;
 			while(curr != NULL) {
 				if(curr->type == TYPE_BLOCK || curr->type == TYPE_EMPTY_BLOCK) {
-					if(!bind(curr, identifier_node->value, type_node->value, 0)) {
+					if(!bind(curr, identifier_node->value, type_node->value, -1)) {
 						printf("Line %d: scope error -- '%s' was already declared in this scope.\n", ast->lineno, identifier_node->value);		
 						return 0;
 					}
@@ -237,12 +240,13 @@ int buildsymbols(struct ast_node* ast) {
 					break;
 				curr = curr->parent;
 			}
+			
 			if(get(curr, identifier_node->value, out)) {
+				printf("found previous declaration for %s\n", identifier_node->value);
 				if(out->argc != argc) {
 					printf("Line %d: Error -- '%s' was previously defined with a different number of arguments.\n", ast->lineno, identifier_node->value);		
 					return 0;
 				}
-				break;
 			}
 			else {
 				bind(curr, identifier_node->value, type_node->value, argc);
@@ -252,8 +256,8 @@ int buildsymbols(struct ast_node* ast) {
 	return buildsymbols(ast->left_child) & buildsymbols(ast->right_sibling);
 }
 
-void print(struct ast_node* ast, int depth) {
-	if(ast == NULL) return;
+int print(struct ast_node* ast, int depth) {
+	if(ast == NULL) return 1;
 	int i;
 	for(i = 0; i < depth; i++)
 		printf("\t");
@@ -264,13 +268,12 @@ void print(struct ast_node* ast, int depth) {
 		printf("symbols: ");
 		struct symrec* curr = ast->vtable;
 		while(curr != NULL) {
-			printf(" %s", curr->name, curr->value);
+			printf(" (%s, %d)", curr->name, curr->argc);
 			curr = curr->next;
 		}
 		printf("\n");
 	}
-	print(ast->left_child, depth+1);
-	print(ast->right_sibling, depth);
+	return print(ast->left_child, depth+1) & print(ast->right_sibling, depth);
 }
 
 int typecheck(struct ast_node* ast) {
@@ -287,12 +290,34 @@ int scopecheck(struct ast_node* ast) {
 		scopecheck(ast->right_sibling);
 	}
 	else {
-		if(ast->type == TYPE_IDENTIFIER) {
-			struct symrec* out;
-			if(!get(ast, ast->value, out)) {
-				printf("Line %d: scope error -- '%s' undeclared.\n", ast->lineno, ast->value);
-				return 0;
-			}
+		struct symrec* out;
+		struct ast_node* curr;
+		int argc = 0;
+		switch(ast->type) {
+			case TYPE_IDENTIFIER:
+				out = (struct symrec*) malloc(sizeof(struct symrec));
+				if(!get(ast, ast->value, out)) {
+					printf("Line %d: scope error -- '%s' undeclared.\n", ast->lineno, ast->value);
+					return 0;
+				}
+				break;
+			case TYPE_FCALL_ARGS:
+				curr = ast->left_child->right_sibling;
+				while(curr != NULL) {
+						argc++;
+					curr = curr->right_sibling;
+				}
+			case TYPE_FCALL_NO_ARGS:
+				out = (struct symrec*) malloc(sizeof(struct symrec));
+				if(!get(ast->left_child, ast->left_child->value, out)) {
+					printf("Line %d: scope error -- '%s' undeclared.\n", ast->lineno, ast->value);
+					return 0;
+				}
+				else if(out->argc != argc) {
+					printf("Line %d: Error -- '%s' mismatch in number of arguments.\n", ast->lineno, ast->left_child->value);
+					return 0;
+				}
+				return scopecheck(ast->right_sibling);
 		}
 		return scopecheck(ast->left_child) & scopecheck(ast->right_sibling);
 	}
