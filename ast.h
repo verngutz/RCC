@@ -169,6 +169,19 @@ int get(struct ast_node* env, char* name, struct symrec* out) {
 	return get(env->parent, name, out);
 }
 
+int remove_stupidity(struct ast_node* ast) {
+	if(ast == NULL) return 1;
+	switch(ast->type) {
+		case TYPE_TYPE_SPECIFIER:
+			if(ast->right_sibling != NULL && ast->right_sibling->type == TYPE_TYPE_SPECIFIER) {
+				printf("Line %d: Too many type specifiers at '%s'.\n", ast->right_sibling->lineno, ast->right_sibling->value);
+				return 0;
+			}
+			break;
+	}
+	return remove_stupidity(ast->left_child) && remove_stupidity(ast->right_sibling);
+}
+
 int buildsymbols(struct ast_node* ast) {
 	if(ast == NULL) return 1;
 	struct ast_node* type_node;
@@ -253,7 +266,7 @@ int buildsymbols(struct ast_node* ast) {
 			}
 			break;
 	}
-	return buildsymbols(ast->left_child) & buildsymbols(ast->right_sibling);
+	return buildsymbols(ast->left_child) && buildsymbols(ast->right_sibling);
 }
 
 int print(struct ast_node* ast, int depth) {
@@ -319,7 +332,7 @@ int scopecheck(struct ast_node* ast) {
 				}
 				return scopecheck(ast->right_sibling);
 		}
-		return scopecheck(ast->left_child) & scopecheck(ast->right_sibling);
+		return scopecheck(ast->left_child) && scopecheck(ast->right_sibling);
 	}
 }
 
